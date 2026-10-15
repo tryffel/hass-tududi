@@ -9,7 +9,7 @@ from typing import Any
 
 import aiohttp
 
-from .models import Note, Person, Profile, Project, Tag, Task, TaskStatus
+from .models import Comment, Note, Person, Profile, Project, Tag, Task, TaskStatus
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -218,6 +218,22 @@ class TududiClient:
     async def delete_task(self, uid: str) -> None:
         """Delete a task."""
         await self._request("DELETE", f"/task/{uid}")
+
+    # ------------------------------------------------------------------ comments
+
+    async def get_comments(self, task_uid: str) -> list[Comment]:
+        """Return the top-level comments of a task."""
+        data = await self._request("GET", f"/task/{task_uid}/comments")
+        return [Comment.from_api(item) for item in _items(data, "comments")]
+
+    async def create_comment(self, task_uid: str, body: str) -> Comment:
+        """Add a comment to a task."""
+        data = await self._request("POST", f"/task/{task_uid}/comments", json={"body": body})
+        return Comment.from_api(data)
+
+    async def delete_comment(self, comment_uid: str) -> None:
+        """Delete a comment. Only its author can delete it."""
+        await self._request("DELETE", f"/comment/{comment_uid}")
 
     # ------------------------------------------------------------------ projects / tags
 

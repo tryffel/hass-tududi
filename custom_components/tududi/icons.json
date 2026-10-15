@@ -30,6 +30,12 @@
     },
     "run_reminders": {
       "service": "mdi:bell-ring"
+    },
+    "create_invoice": {
+      "service": "mdi:receipt-text-plus"
+    },
+    "update_invoice": {
+      "service": "mdi:receipt-text-edit"
     }
   }
 }

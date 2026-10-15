@@ -27,6 +27,7 @@ from .const import (
     DEFAULT_OPTIONS,
     DOMAIN,
 )
+from .invoices import InvoiceData, format_amount
 from .models import Task
 
 if TYPE_CHECKING:
@@ -87,6 +88,7 @@ class Reminder:
     task: Task
     days_left: int
     target: str | None
+    invoice: InvoiceData | None = None
 
 
 def select_reminders(data: TududiData, options: dict[str, Any], today: date) -> list[Reminder]:
@@ -124,7 +126,7 @@ def select_reminders(data: TududiData, options: dict[str, Any], today: date) -> 
             target = default_target
         else:
             continue
-        reminders.append(Reminder(task, days_left, target))
+        reminders.append(Reminder(task, days_left, target, data.invoices.get(task.uid)))
 
     reminders.sort(key=lambda r: (r.days_left, r.task.name.casefold()))
     return reminders
@@ -253,6 +255,11 @@ class ReminderManager:
             raise HomeAssistantError(f"Notify service {reminder.target} does not exist")
         task = reminder.task
         message = f"{due_text(reminder.days_left)} ({task.due_date})"
+        invoice = reminder.invoice
+        if invoice and invoice.amount is not None:
+            message += f" · {format_amount(invoice.amount)} {invoice.currency or ''}".rstrip()
+        if invoice and invoice.reference:
+            message += f"\nReference: {invoice.reference}"
         if task.note:
             message += f"\n{task.note.strip().splitlines()[0]}"
         await self.hass.services.async_call(

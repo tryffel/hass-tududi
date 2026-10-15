@@ -212,6 +212,32 @@ class Note:
 
 
 @dataclass(slots=True)
+class Comment:
+    """A comment on a tududi task."""
+
+    uid: str
+    body: str
+    is_own: bool = False
+    author_email: str | None = None
+    created_at: datetime | None = None
+    deleted: bool = False
+
+    @classmethod
+    def from_api(cls, data: dict[str, Any]) -> Comment:
+        """Build a comment from an API response object."""
+        author = data.get("author") or {}
+        return cls(
+            uid=str(data["uid"]),
+            body=str(data.get("body") or ""),
+            is_own=bool(data.get("is_own")),
+            author_email=author.get("email"),
+            created_at=parse_datetime(data.get("created_at")),
+            # tududi soft-deletes comments and still lists them.
+            deleted=data.get("deleted_at") is not None,
+        )
+
+
+@dataclass(slots=True)
 class Person:
     """A tududi person (household member or contact) that tasks can be assigned to."""
 

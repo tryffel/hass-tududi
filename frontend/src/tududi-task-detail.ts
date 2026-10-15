@@ -1,6 +1,15 @@
 import { LitElement, css, html, nothing } from "lit";
-import { icon } from "./icons";
-import { addDays, dueLabel, dueTone, daysUntil, parseTags } from "./logic";
+import { define, icon } from "./icons";
+import {
+  addDays,
+  daysUntil,
+  dueLabel,
+  dueTone,
+  formatDate,
+  formatMoney,
+  parseTags,
+  toCents,
+} from "./logic";
 import "./tududi-notes";
 import {
   PRIORITY_LABELS,
@@ -82,6 +91,102 @@ export class TududiTaskDetail extends LitElement {
 
   private setDue(date: string | null) {
     if (date !== this.task.due_date) this.change({ due_date: date });
+  }
+
+  private emit(type: string, detail: unknown) {
+    this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+  }
+
+  /** Save amount, currency and reference together (they form one data comment). */
+  private onInvoice() {
+    const value = (name: string) =>
+      this.renderRoot.querySelector<HTMLInputElement>(`input[name=${name}]`)?.value.trim() ?? "";
+    const amount = value("amount");
+    if (amount && toCents(amount) === null) return;
+    const inv = this.task.invoice;
+    const next = {
+      amount: amount || null,
+      currency: value("currency").toUpperCase() || null,
+      reference: value("reference") || null,
+    };
+    const unchanged =
+      toCents(next.amount) === toCents(inv?.amount ?? null) &&
+      next.currency === (inv?.currency ?? null) &&
+      next.reference === (inv?.reference ?? null);
+    if (unchanged) return;
+    this.emit("invoice-change", { uid: this.task.uid, ...next });
+  }
+
+  private renderLinked(label: string, uid: string | null, dir: "prev" | "next") {
+    if (!uid) return nothing;
+    const linked = this.snap.tasks.find((t) => t.uid === uid);
+    const text = linked
+      ? html`${linked.due_date ? formatDate(linked.due_date, this.language) : linked.name}${
+          linked.invoice?.amount
+            ? html` · ${formatMoney(linked.invoice.amount, linked.invoice.currency, this.language)}`
+            : nothing
+        }${linked.done ? " · paid" : ""}`
+      : html`<em>not loaded</em>`;
+    return html`<button
+      class="linked ${dir}"
+      ?disabled=${!linked}
+      @click=${() => this.emit("select-task", { uid })}
+    >
+      ${dir === "prev" ? icon("chevronLeft", 18) : nothing}
+      <span><span class="linked-label">${label}</span> ${text}</span>
+      ${dir === "next" ? icon("chevronRight", 18) : nothing}
+    </button>`;
+  }
+
+  private renderInvoice() {
+    const inv = this.task.invoice;
+    if (!inv) return nothing;
+    const amountInvalid = (e: Event) => {
+      const el = e.target as HTMLInputElement;
+      el.classList.toggle("invalid", el.value.trim() !== "" && toCents(el.value) === null);
+    };
+    return html`
+      <section class="invoice">
+        <div class="section-title">${icon("receipt", 18)} Invoice</div>
+        <div class="grid">
+          <label>Amount</label>
+          <div class="amount">
+            <input
+              name="amount"
+              inputmode="decimal"
+              placeholder="0.00"
+              .value=${inv.amount ?? ""}
+              @input=${amountInvalid}
+              @change=${this.onInvoice}
+            />
+            <input
+              name="currency"
+              class="currency"
+              maxlength="3"
+              placeholder=${this.snap.currency}
+              .value=${inv.currency ?? ""}
+              @change=${this.onInvoice}
+            />
+          </div>
+          <label>Reference</label>
+          <input
+            name="reference"
+            placeholder="Payment reference"
+            .value=${inv.reference ?? ""}
+            @change=${this.onInvoice}
+          />
+        </div>
+        <div class="links">
+          ${this.renderLinked("Previous", inv.previous_uid, "prev")}
+          ${this.renderLinked("Next", inv.next_uid, "next")}
+        </div>
+        ${inv.next_uid
+          ? nothing
+          : html`<button class="chip next-invoice" @click=${() => this.emit("next-invoice", { uid: this.task.uid })}>
+              ${icon("plus", 16)} Create next invoice
+            </button>`}
+      </section>
+    `;
   }
 
   override render() {
@@ -209,6 +314,8 @@ export class TududiTaskDetail extends LitElement {
           </div>
         </div>
 
+        ${this.renderInvoice()}
+
         <label class="block">Note</label>
         <textarea
           rows="6"
@@ -254,6 +361,9 @@ export class TududiTaskDetail extends LitElement {
       display: flex;
       flex-direction: column;
       gap: 12px;
+    }
+    .content > * {
+      flex-shrink: 0;
     }
     .name-row {
       display: flex;
@@ -393,7 +503,72 @@ export class TududiTaskDetail extends LitElement {
     tududi-notes {
       margin-top: 8px;
     }
+    section.invoice {
+      border: 1px solid var(--divider-color);
+      border-radius: 10px;
+      padding: 10px 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+      color: var(--secondary-text-color);
+      font-size: 0.9em;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .amount {
+      display: flex;
+      gap: 6px;
+    }
+    input.currency {
+      width: 64px;
+      flex: none;
+      text-transform: uppercase;
+    }
+    input.invalid {
+      border-color: var(--error-color);
+    }
+    .links {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .links:empty {
+      display: none;
+    }
+    button.linked {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: none;
+      border: 1px solid var(--divider-color);
+      border-radius: 8px;
+      padding: 4px 8px;
+      color: var(--primary-text-color);
+      font-size: 0.85em;
+    }
+    button.linked.next {
+      margin-left: auto;
+    }
+    button.linked:hover:not([disabled]) {
+      border-color: var(--primary-color);
+    }
+    .linked-label {
+      color: var(--secondary-text-color);
+    }
+    button.next-invoice {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
   `;
 }
 
-customElements.define("tududi-task-detail", TududiTaskDetail);
+define("tududi-task-detail", TududiTaskDetail);

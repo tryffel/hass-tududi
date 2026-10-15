@@ -1,4 +1,13 @@
-import type { Entry, HomeAssistant, Note, NoteFields, Snapshot, Task, TaskFields } from "./types";
+import type {
+  Entry,
+  HomeAssistant,
+  InvoiceFields,
+  Note,
+  NoteFields,
+  Snapshot,
+  Task,
+  TaskFields,
+} from "./types";
 
 /** Thin wrapper around the integration's websocket commands. */
 export class TududiApi {
@@ -33,6 +42,18 @@ export class TududiApi {
 
   deleteTask(entryId: string, uid: string): Promise<void> {
     return this.call("task/delete", { entry_id: entryId, uid });
+  }
+
+  createInvoice(entryId: string, fields: InvoiceFields): Promise<Task> {
+    return this.call("invoice/create", { entry_id: entryId, ...fields });
+  }
+
+  updateInvoice(
+    entryId: string,
+    uid: string,
+    data: { amount: string | null; currency: string | null; reference: string | null },
+  ): Promise<unknown> {
+    return this.call("invoice/update", { entry_id: entryId, uid, ...data });
   }
 
   createNote(entryId: string, title: string, fields: NoteFields = {}): Promise<Note> {

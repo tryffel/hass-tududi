@@ -251,6 +251,86 @@
           "description": "Send even if a reminder was already sent today or reminders are disabled. Snoozed tasks are still skipped."
         }
       }
+    },
+    "create_invoice": {
+      "name": "Create invoice",
+      "description": "Creates an invoice task (tagged with the reminder tag) with amount and reference, linked to the previous invoice with the same name.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Tududi account",
+          "description": "The tududi account (config entry) to use."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Invoice name, e.g. the payee. Invoices with the same name form a series."
+        },
+        "due_date": {
+          "name": "Due date",
+          "description": "Invoice due date."
+        },
+        "amount": {
+          "name": "Amount",
+          "description": "Invoice amount, e.g. 52.10."
+        },
+        "currency": {
+          "name": "Currency",
+          "description": "Currency code. Defaults to the Home Assistant currency when an amount is given."
+        },
+        "reference": {
+          "name": "Reference",
+          "description": "Payment reference or invoice number."
+        },
+        "project": {
+          "name": "Project",
+          "description": "Project name or uid."
+        },
+        "assigned_to": {
+          "name": "Assigned to",
+          "description": "Name or uid of the tududi person who pays it."
+        },
+        "note": {
+          "name": "Note",
+          "description": "Free text note."
+        },
+        "tags": {
+          "name": "Tags",
+          "description": "Extra tags. The reminder tag is always added."
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "Task priority."
+        },
+        "link_previous": {
+          "name": "Link previous",
+          "description": "Link to the latest invoice with the same name."
+        }
+      }
+    },
+    "update_invoice": {
+      "name": "Update invoice",
+      "description": "Replaces the amount, currency and reference of an invoice task. Empty fields are cleared.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Tududi account",
+          "description": "The tududi account (config entry) to use."
+        },
+        "uid": {
+          "name": "Task UID",
+          "description": "The tududi task uid."
+        },
+        "amount": {
+          "name": "Amount",
+          "description": "Invoice amount, e.g. 52.10."
+        },
+        "currency": {
+          "name": "Currency",
+          "description": "Currency code. Defaults to the Home Assistant currency when an amount is given."
+        },
+        "reference": {
+          "name": "Reference",
+          "description": "Payment reference or invoice number."
+        }
+      }
     }
   },
   "selector": {

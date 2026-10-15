@@ -156,3 +156,79 @@ run_reminders:
       default: false
       selector:
         boolean:
+
+create_invoice:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: tududi
+    name:
+      required: true
+      example: "Electricity invoice"
+      selector:
+        text:
+    due_date:
+      required: true
+      example: "2026-11-01"
+      selector:
+        date:
+    amount:
+      example: "52.10"
+      selector:
+        text:
+    currency:
+      example: "EUR"
+      selector:
+        text:
+    reference:
+      example: "RF18 1234 5678"
+      selector:
+        text:
+    project:
+      example: "Household bills"
+      selector:
+        text:
+    assigned_to:
+      example: "Giulia"
+      selector:
+        text:
+    note:
+      selector:
+        text:
+          multiline: true
+    tags:
+      selector:
+        text:
+          multiple: true
+    priority:
+      selector:
+        select:
+          translation_key: priority
+          options: [low, medium, high]
+    link_previous:
+      default: true
+      selector:
+        boolean:
+
+update_invoice:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: tududi
+    uid:
+      required: true
+      selector:
+        text:
+    amount:
+      selector:
+        text:
+    currency:
+      selector:
+        text:
+    reference:
+      selector:
+        text:

@@ -39,9 +39,17 @@ async def test_seeded_data_shape(giorgio: TududiClient) -> None:
     assert all(t.is_open for t in tasks)
 
     all_tasks = await giorgio.get_tasks(include_done=True)
-    invoices = [t for t in all_tasks if "invoice" in t.tags]
-    assert len(invoices) >= 6
-    assert all(t.project_name == "Household bills" for t in invoices)
+    seeded = {
+        "Electricity invoice",
+        "Water invoice",
+        "Internet invoice",
+        "Insurance invoice",
+        "Daycare invoice",
+        "Old paid invoice",
+    }
+    invoices = [t for t in all_tasks if t.name in seeded]
+    assert {t.name for t in invoices} == seeded
+    assert all("invoice" in t.tags and t.project_name == "Household bills" for t in invoices)
     assert any(t.is_done for t in all_tasks)
 
     projects = {p.name for p in await giorgio.get_projects()}
@@ -145,3 +153,32 @@ async def test_note_lifecycle(giorgio: TududiClient) -> None:
     finally:
         await giorgio.delete_note(note.uid)
     assert note.uid not in {n.uid for n in await giorgio.get_notes()}
+
+
+async def test_invoice_data_comment(giorgio: TududiClient, giulia: TududiClient) -> None:
+    """Invoice data survives a round trip through tududi comments."""
+    from decimal import Decimal
+
+    from custom_components.tududi.invoices import (
+        InvoiceData,
+        data_comments,
+        format_comment,
+    )
+
+    # tududi does not delete comments with their task and reuses task ids, so
+    # use one permanent task instead of creating and deleting one per run.
+    name = "[it] invoice comment test (keep)"
+    task = next((t for t in await giorgio.get_tasks() if t.name == name), None)
+    if task is None:
+        task = await giorgio.create_task(name, tags=["it-test"])
+
+    data = InvoiceData(amount=Decimal("52.10"), currency="EUR", reference="RF18 1234")
+    created = await giorgio.create_comment(task.uid, format_comment(data))
+    try:
+        assert created.is_own
+        found = data_comments(await giorgio.get_comments(task.uid))
+        assert [d for _, d in found] == [data]
+    finally:
+        await giorgio.delete_comment(created.uid)
+    # Deleted comments are still listed by tududi but must be ignored.
+    assert data_comments(await giorgio.get_comments(task.uid)) == []

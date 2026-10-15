@@ -16,6 +16,7 @@ from homeassistant.helpers.typing import ConfigType
 from .api import TududiAuthError, TududiClient, TududiError
 from .const import CONF_VERIFY_SSL, DOMAIN
 from .coordinator import TududiCoordinator
+from .invoices import INVOICE_LINKS, InvoiceLinks
 from .models import Profile
 from .panel import async_register_panel
 from .reminders import REMINDERS, EntryReminders, ReminderManager
@@ -33,6 +34,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     manager = ReminderManager(hass)
     await manager.async_load()
     hass.data[REMINDERS] = manager
+    links = InvoiceLinks(hass)
+    await links.async_load()
+    hass.data[INVOICE_LINKS] = links
     async_setup_services(hass)
     async_setup_websocket(hass)
     await async_register_panel(hass)

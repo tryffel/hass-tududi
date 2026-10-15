@@ -14,6 +14,10 @@ const PATHS = {
   note: "M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3M5,12V14H19V12H5M5,16V18H14V16H5Z",
   pencil:
     "M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z",
+  receipt:
+    "M3,22V2L4.5,3.5L6,2L7.5,3.5L9,2L10.5,3.5L12,2L13.5,3.5L15,2L16.5,3.5L18,2L19.5,3.5L21,2V22L19.5,20.5L18,22L16.5,20.5L15,22L13.5,20.5L12,22L10.5,20.5L9,22L7.5,20.5L6,22L4.5,20.5L3,22M18,9V7H6V9H18M18,13V11H6V13H18M18,17V15H6V17H18Z",
+  chevronLeft: "M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z",
+  chevronRight: "M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z",
   repeat:
     "M17,17H7V14L3,18L7,22V19H19V13H17M7,7H17V10L21,6L17,2V5H5V11H7V7Z",
 };
@@ -22,4 +26,12 @@ export type IconName = keyof typeof PATHS;
 
 export function icon(name: IconName, size = 24) {
   return svg`<svg viewBox="0 0 24 24" width=${size} height=${size} aria-hidden="true"><path fill="currentColor" d=${PATHS[name]}></path></svg>`;
+}
+
+/**
+ * Register a custom element once. After an update Home Assistant may load the
+ * new bundle into a page that still has the old one; redefining would throw.
+ */
+export function define(name: string, element: CustomElementConstructor) {
+  if (!customElements.get(name)) customElements.define(name, element);
 }

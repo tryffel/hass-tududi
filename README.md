@@ -194,8 +194,6 @@ make test-e2e           # Playwright tests against the dev stack
 
 Dev logins: `giorgio` / `giulia`, password `devpassword123` (tududi: `giorgio@example.com`, `giulia@example.com`).
 
-See [SPEC.md](SPEC.md) for the behaviour, [PLAN.md](PLAN.md) for the roadmap and [AGENTS.md](AGENTS.md) for contributor and agent guidelines.
-
 ## License
 
 [MIT](LICENSE). Not affiliated with the tududi project.

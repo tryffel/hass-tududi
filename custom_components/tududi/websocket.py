@@ -21,6 +21,7 @@ from .const import (
     DEFAULT_OPTIONS,
     DOMAIN,
 )
+from .invoices import INVOICE_LINKS, InvoiceData, parse_amount
 from .models import Note, Task
 
 if TYPE_CHECKING:
@@ -97,7 +98,21 @@ def serialize_note(note: Note) -> dict[str, Any]:
     }
 
 
-def snapshot(entry: TududiConfigEntry) -> dict[str, Any]:
+def _invoice_info(
+    hass: HomeAssistant, coordinator: TududiCoordinator, task: Task
+) -> dict[str, Any] | None:
+    if not coordinator.is_invoice(task):
+        return None
+    links = hass.data.get(INVOICE_LINKS)
+    data = coordinator.data.invoices.get(task.uid)
+    return {
+        **(data.as_dict() if data else {"amount": None, "currency": None, "reference": None}),
+        "previous_uid": links.previous.get(task.uid) if links else None,
+        "next_uid": links.next_of(task.uid) if links else None,
+    }
+
+
+def snapshot(hass: HomeAssistant, entry: TududiConfigEntry) -> dict[str, Any]:
     """Full state of one account for the panel."""
     coordinator: TududiCoordinator = entry.runtime_data.coordinator
     data = coordinator.data
@@ -106,11 +121,15 @@ def snapshot(entry: TududiConfigEntry) -> dict[str, Any]:
     return {
         "entry_id": entry.entry_id,
         "today": coordinator.today().isoformat(),
+        "currency": hass.config.currency,
         "reminder_tag": options[CONF_REMINDER_TAG],
         "reminder_days_before": options[CONF_REMINDER_DAYS_BEFORE],
         "self_person": self_person.uid if self_person else None,
         "self_user_id": data.self_user_id,
-        "tasks": [serialize_task(t) for t in data.tasks.values()],
+        "tasks": [
+            {**serialize_task(t), "invoice": _invoice_info(hass, coordinator, t)}
+            for t in data.tasks.values()
+        ],
         "projects": sorted(
             ({"uid": p.uid, "name": p.name} for p in data.projects.values()),
             key=lambda p: p["name"].casefold(),
@@ -193,7 +212,7 @@ async def ws_subscribe(
 
     @callback
     def send() -> None:
-        connection.send_message(websocket_api.event_message(msg["id"], snapshot(entry)))
+        connection.send_message(websocket_api.event_message(msg["id"], snapshot(hass, entry)))
 
     connection.subscriptions[msg["id"]] = coordinator.async_add_listener(send)
     connection.send_result(msg["id"])
@@ -316,6 +335,84 @@ async def ws_note_delete(
     connection.send_result(msg["id"])
 
 
+INVOICE_DATA_SCHEMA = {
+    vol.Optional("amount"): vol.Any(None, str, int, float),
+    vol.Optional("currency"): vol.Any(None, cv.string),
+    vol.Optional("reference"): vol.Any(None, str),
+}
+
+
+def _invoice_data(msg: dict[str, Any]) -> InvoiceData:
+    amount = msg.get("amount")
+    parsed = parse_amount(amount)
+    if amount not in (None, "") and parsed is None:
+        raise vol.Invalid(f"Invalid amount: {amount}")
+    return InvoiceData(
+        amount=parsed,
+        currency=(msg.get("currency") or "").strip().upper() or None,
+        reference=(msg.get("reference") or "").strip() or None,
+    )
+
+
+@websocket_api.websocket_command(
+    _entry_schema(
+        "tududi/invoice/create",
+        {
+            **TASK_FIELDS_SCHEMA,
+            **INVOICE_DATA_SCHEMA,
+            vol.Required("name"): cv.string,
+            vol.Required("due_date"): cv.date,
+            vol.Optional("previous_uid"): vol.Any(None, cv.string),
+        },
+    )
+)
+@websocket_api.async_response
+@entry_command
+async def ws_invoice_create(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+    entry: TududiConfigEntry,
+) -> None:
+    """Create an invoice task with its invoice data."""
+    try:
+        invoice = _invoice_data(msg)
+    except vol.Invalid as err:
+        connection.send_error(msg["id"], "invalid_format", str(err))
+        return
+    fields = _fields(msg, TASK_FIELDS_SCHEMA)
+    name = fields.pop("name")
+    task = await entry.runtime_data.coordinator.async_create_invoice(
+        name,
+        invoice,
+        previous_uid=msg.get("previous_uid"),
+        auto_link="previous_uid" not in msg,
+        **fields,
+    )
+    connection.send_result(msg["id"], serialize_task(task))
+
+
+@websocket_api.websocket_command(
+    _entry_schema("tududi/invoice/update", {**INVOICE_DATA_SCHEMA, vol.Required("uid"): cv.string})
+)
+@websocket_api.async_response
+@entry_command
+async def ws_invoice_update(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+    entry: TududiConfigEntry,
+) -> None:
+    """Replace the invoice data of a task (all fields; empty clears)."""
+    try:
+        invoice = _invoice_data(msg)
+    except vol.Invalid as err:
+        connection.send_error(msg["id"], "invalid_format", str(err))
+        return
+    data = await entry.runtime_data.coordinator.async_set_invoice(msg["uid"], invoice)
+    connection.send_result(msg["id"], data.as_dict() if data else None)
+
+
 def _fields(msg: dict[str, Any], schema: dict[Any, Any]) -> dict[str, Any]:
     keys = {str(k) for k in schema}
     return {k: v for k, v in msg.items() if k in keys}
@@ -334,5 +431,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
         ws_note_create,
         ws_note_update,
         ws_note_delete,
+        ws_invoice_create,
+        ws_invoice_update,
     ):
         websocket_api.async_register_command(hass, command)

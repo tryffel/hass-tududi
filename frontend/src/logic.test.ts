@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   addDays,
+  addMonths,
+  formatMoney,
+  invoiceDraft,
+  invoiceNames,
+  invoiceTotal,
+  latestInvoiceNamed,
+  toCents,
   daysUntil,
   dueLabel,
   dueTone,
@@ -45,6 +52,7 @@ function snap(tasks: Task[]): Snapshot {
   return {
     entry_id: "e1",
     today: TODAY,
+    currency: "EUR",
     reminder_tag: "invoice",
     reminder_days_before: 7,
     self_person: "p1",
@@ -182,5 +190,75 @@ describe("helpers", () => {
     expect(updated.tasks[0]!.name).toBe("changed");
     expect(SNAP.tasks[0]!.name).toBe("electricity");
     expect(withTask(SNAP, task("new")).tasks).toHaveLength(8);
+  });
+});
+
+describe("invoices", () => {
+  const inv = (uid: string, extra: Partial<Task>, amount: string | null, currency = "EUR") =>
+    task(uid, {
+      tags: ["invoice"],
+      invoice: { amount, currency, reference: null, previous_uid: null, next_uid: null },
+      ...extra,
+    });
+  const S = { ...snap([]), currency: "EUR" };
+
+  it("adds months and clamps to month end", () => {
+    expect(addMonths("2026-10-15", 1)).toBe("2026-11-15");
+    expect(addMonths("2026-01-31", 1)).toBe("2026-02-28");
+    expect(addMonths("2026-12-31", 2)).toBe("2027-02-28");
+    expect(addMonths("2028-01-31", 1)).toBe("2028-02-29");
+  });
+
+  it("parses amounts to cents", () => {
+    expect(toCents("52.10")).toBe(5210);
+    expect(toCents("1 234,5")).toBe(123450);
+    expect(toCents("abc")).toBeNull();
+    expect(toCents(null)).toBeNull();
+  });
+
+  it("formats money and totals", () => {
+    expect(formatMoney("52.1", "EUR", "en")).toBe("€52.10");
+    expect(formatMoney("5", "XYZ1", "en")).toBe("5.00 XYZ1");
+    expect(formatMoney(null, "EUR")).toBe("");
+    const tasks = [inv("a", {}, "10.10"), inv("b", {}, "5.05"), inv("c", {}, null),
+      inv("d", {}, "1", "USD")];
+    expect(invoiceTotal(tasks, "EUR", "en")).toBe("€15.15 + $1.00");
+    expect(invoiceTotal([], "EUR")).toBe("");
+  });
+
+  it("finds the latest invoice by name and suggests names", () => {
+    const s = {
+      ...S,
+      tasks: [
+        inv("old", { name: "Water", due_date: "2026-08-15" }, "30"),
+        inv("new", { name: "water ", due_date: "2026-09-15" }, "31"),
+        inv("el", { name: "Electricity", due_date: "2026-09-01" }, "50"),
+        task("plain", { name: "Water" }),
+      ],
+    };
+    expect(latestInvoiceNamed(s, "WATER")?.uid).toBe("new");
+    expect(latestInvoiceNamed(s, "Gas")).toBeUndefined();
+    expect(invoiceNames(s)).toEqual(["water", "Electricity"]);
+  });
+
+  it("drafts the next invoice of a series", () => {
+    const prev = inv(
+      "p",
+      { name: "Water", due_date: "2026-10-15", project_uid: "bills", assigned_to: "giulia" },
+      "31",
+      "USD",
+    );
+    expect(invoiceDraft(S, prev)).toEqual({
+      name: "Water",
+      due_date: "2026-11-15",
+      amount: "",
+      currency: "USD",
+      reference: "",
+      project_uid: "bills",
+      assigned_to: "giulia",
+      note: "",
+      previous_uid: "p",
+    });
+    expect(invoiceDraft(S).currency).toBe("EUR");
   });
 });

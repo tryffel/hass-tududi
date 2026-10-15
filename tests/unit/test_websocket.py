@@ -13,6 +13,7 @@ from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
 from custom_components.tududi.api import TududiError
 from custom_components.tududi.const import CONF_HA_USER, DOMAIN
+from custom_components.tududi.invoices import INVOICE_LINKS
 from custom_components.tududi.models import TaskStatus
 
 from .conftest import setup_entry
@@ -40,8 +41,12 @@ class WsHelper:
 
     async def __call__(self, type_: str, **data: Any) -> dict[str, Any]:
         client = await self.connect()
-        await client.send_json({"id": self.next_id(), "type": type_, **data})
-        return await client.receive_json()
+        msg_id = self.next_id()
+        await client.send_json({"id": msg_id, "type": type_, **data})
+        while True:
+            msg = await client.receive_json()
+            if msg.get("type") == "result" and msg.get("id") == msg_id:
+                return msg
 
 
 @pytest.fixture
@@ -252,3 +257,57 @@ async def test_unknown_entry(
     result = await ws("tududi/subscribe", entry_id="missing")
     assert result["error"]["code"] == "not_found"
     assert DOMAIN == "tududi"
+
+
+async def test_invoice_commands(
+    hass: HomeAssistant, config_entry: MockConfigEntry, mock_client: MagicMock, ws
+) -> None:
+    await setup_entry(hass, config_entry)
+    entry_id = config_entry.entry_id
+    result = await ws(
+        "tududi/invoice/create",
+        entry_id=entry_id,
+        name="Water invoice",
+        due_date="2026-11-15",
+        amount="33.40",
+        reference="R3",
+        project_uid="jeqrjkh14aj9w8q",
+    )
+    assert result["success"] is True
+    uid = result["result"]["uid"]
+    assert mock_client.create_task.await_args.kwargs["tags"] == ["invoice"]
+
+    result = await ws("tududi/subscribe", entry_id=entry_id)
+    snap = (await ws.client.receive_json())["event"]
+    task = next(t for t in snap["tasks"] if t["uid"] == uid)
+    assert task["invoice"]["amount"] == "33.40"
+    assert task["invoice"]["previous_uid"] == WATER
+
+    result = await ws("tududi/invoice/update", entry_id=entry_id, uid=uid, amount="", reference="")
+    assert result["success"] is True
+    assert result["result"] is None
+
+
+async def test_invoice_create_explicit_no_previous(
+    hass: HomeAssistant, config_entry: MockConfigEntry, mock_client: MagicMock, ws
+) -> None:
+    await setup_entry(hass, config_entry)
+    result = await ws(
+        "tududi/invoice/create",
+        entry_id=config_entry.entry_id,
+        name="Water invoice",
+        due_date="2026-11-15",
+        previous_uid=None,
+    )
+    assert result["success"] is True
+    assert result["result"]["uid"] not in hass.data[INVOICE_LINKS].previous
+
+
+async def test_invoice_invalid_amount(
+    hass: HomeAssistant, config_entry: MockConfigEntry, mock_client: MagicMock, ws
+) -> None:
+    await setup_entry(hass, config_entry)
+    result = await ws(
+        "tududi/invoice/update", entry_id=config_entry.entry_id, uid=WATER, amount="lots"
+    )
+    assert result["error"]["code"] == "invalid_format"

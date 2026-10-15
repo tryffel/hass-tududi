@@ -1,5 +1,5 @@
 import { LitElement, css, html, nothing } from "lit";
-import { icon } from "./icons";
+import { define, icon } from "./icons";
 import type { Note } from "./types";
 
 export interface NoteSaveDetail {
@@ -271,4 +271,4 @@ export class TududiNotes extends LitElement {
   `;
 }
 
-customElements.define("tududi-notes", TududiNotes);
+define("tududi-notes", TududiNotes);

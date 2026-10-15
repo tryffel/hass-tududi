@@ -251,3 +251,127 @@ export function withTask(snap: Snapshot, task: Task): Snapshot {
     tasks: exists ? snap.tasks.map((t) => (t.uid === task.uid ? task : t)) : [...snap.tasks, task],
   };
 }
+
+// ------------------------------------------------------------------ invoices
+
+/** Same day `months` later, clamped to the end of shorter months. */
+export function addMonths(date: string, months: number): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const target = new Date(Date.UTC(y!, m! - 1 + months, 1));
+  const lastDay = new Date(
+    Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  target.setUTCDate(Math.min(d!, lastDay));
+  return target.toISOString().slice(0, 10);
+}
+
+/** Parse "52.10", "52,10" or "1 234,50" to cents; null if invalid. */
+export function toCents(amount: string | null | undefined): number | null {
+  if (amount === null || amount === undefined) return null;
+  let text = amount.replace(/[\s\u00a0]/g, "");
+  if (text.includes(",") && !text.includes(".")) text = text.replace(",", ".");
+  if (!/^-?\d+(\.\d+)?$/.test(text)) return null;
+  return Math.round(Number(text) * 100);
+}
+
+export function formatMoney(
+  amount: string | number | null,
+  currency: string | null,
+  lang = "en",
+): string {
+  if (amount === null) return "";
+  const value = typeof amount === "number" ? amount : Number(amount);
+  if (!Number.isFinite(value)) return String(amount);
+  if (currency && /^[A-Z]{3}$/.test(currency)) {
+    try {
+      return new Intl.NumberFormat(lang, { style: "currency", currency }).format(value);
+    } catch {
+      // Unknown currency code: fall through to plain formatting.
+    }
+  }
+  const plain = new Intl.NumberFormat(lang, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+  return currency ? `${plain} ${currency}` : plain;
+}
+
+/** Sum of open invoice amounts per currency, e.g. "€83.10" or "€10.00 + $5.00". */
+export function invoiceTotal(tasks: Task[], fallbackCurrency: string, lang = "en"): string {
+  const sums = new Map<string, number>();
+  for (const t of tasks) {
+    const cents = toCents(t.invoice?.amount);
+    if (cents === null) continue;
+    const currency = t.invoice?.currency ?? fallbackCurrency;
+    sums.set(currency, (sums.get(currency) ?? 0) + cents);
+  }
+  return [...sums]
+    .map(([currency, cents]) => formatMoney(cents / 100, currency, lang))
+    .join(" + ");
+}
+
+export function isInvoice(task: Task): boolean {
+  return task.invoice !== undefined && task.invoice !== null;
+}
+
+/** Most recent invoice with this name (case-insensitive), by due date. */
+export function latestInvoiceNamed(snap: Snapshot, name: string): Task | undefined {
+  const wanted = name.trim().toLocaleLowerCase();
+  if (!wanted) return undefined;
+  return snap.tasks
+    .filter((t) => isInvoice(t) && t.name.trim().toLocaleLowerCase() === wanted)
+    .sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? ""))
+    .at(-1);
+}
+
+/** Distinct invoice names, most recently due first (for name suggestions). */
+export function invoiceNames(snap: Snapshot): string[] {
+  const seen = new Map<string, string>();
+  const sorted = snap.tasks
+    .filter(isInvoice)
+    .sort((a, b) => (b.due_date ?? "").localeCompare(a.due_date ?? ""));
+  for (const t of sorted) {
+    const key = t.name.trim().toLocaleLowerCase();
+    if (!seen.has(key)) seen.set(key, t.name.trim());
+  }
+  return [...seen.values()];
+}
+
+export interface InvoiceDraft {
+  name: string;
+  due_date: string;
+  amount: string;
+  currency: string;
+  reference: string;
+  project_uid: string | null;
+  assigned_to: string | null;
+  note: string;
+  previous_uid?: string | null;
+}
+
+/** Empty draft, or the next invoice of a series when `previous` is given. */
+export function invoiceDraft(snap: Snapshot, previous?: Task): InvoiceDraft {
+  if (!previous) {
+    return {
+      name: "",
+      due_date: "",
+      amount: "",
+      currency: snap.currency,
+      reference: "",
+      project_uid: null,
+      assigned_to: null,
+      note: "",
+    };
+  }
+  return {
+    name: previous.name,
+    due_date: addMonths(previous.due_date ?? snap.today, 1),
+    amount: "",
+    currency: previous.invoice?.currency ?? snap.currency,
+    reference: "",
+    project_uid: previous.project_uid,
+    assigned_to: previous.assigned_to,
+    note: "",
+    previous_uid: previous.uid,
+  };
+}

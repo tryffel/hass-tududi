@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from collections.abc import Generator
 from dataclasses import replace
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -16,6 +17,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.tududi.const import CONF_VERIFY_SSL, DEFAULT_OPTIONS, DOMAIN
 from custom_components.tududi.models import (
+    Comment,
     Note,
     Person,
     Profile,
@@ -83,7 +85,12 @@ def mock_client(profile_json, tasks) -> Generator[MagicMock]:
         client.get_people.return_value = [
             Person.from_api(p) for p in load_fixture("people")["people"]
         ]
-        client.create_task.return_value = created
+
+        def _created(name: str, **fields: Any) -> Task:
+            values = {k: v for k, v in fields.items() if k in Task.__dataclass_fields__}
+            return replace(created, name=name, **values)
+
+        client.create_task.side_effect = _created
 
         def _updated(uid: str, **fields: Any) -> Task:
             task = next(t for t in tasks if t.uid == uid)
@@ -101,6 +108,16 @@ def mock_client(profile_json, tasks) -> Generator[MagicMock]:
             project_uid=fields.get("project_uid"),
             tags=fields.get("tags", []),
         )
+        client.get_comments.return_value = []
+        counter = iter(range(1, 1000))
+        client.create_comment.side_effect = lambda task_uid, body: Comment(
+            uid=f"comment-{next(counter)}",
+            body=body,
+            is_own=True,
+            author_email="giorgio@example.com",
+            created_at=datetime.now(UTC),
+        )
+        client.delete_comment.return_value = None
         yield client
 
 

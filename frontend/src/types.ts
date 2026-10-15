@@ -14,6 +14,29 @@ export interface Task {
   recurring: boolean;
   completed_at: string | null;
   created_at: string | null;
+  /** Set for tasks with the invoice (reminder) tag. */
+  invoice?: InvoiceInfo | null;
+}
+
+export interface InvoiceInfo {
+  amount: string | null;
+  currency: string | null;
+  reference: string | null;
+  previous_uid: string | null;
+  next_uid: string | null;
+}
+
+export interface InvoiceFields {
+  name: string;
+  due_date: string;
+  amount?: string | null;
+  currency?: string | null;
+  reference?: string | null;
+  project_uid?: string | null;
+  assigned_to?: string | null;
+  note?: string | null;
+  /** Omit to link automatically by name; null for no link. */
+  previous_uid?: string | null;
 }
 
 export interface Project {
@@ -39,6 +62,7 @@ export interface Person {
 export interface Snapshot {
   entry_id: string;
   today: string;
+  currency: string;
   reminder_tag: string;
   reminder_days_before: number;
   self_person: string | null;

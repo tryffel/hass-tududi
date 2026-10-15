@@ -19,6 +19,7 @@ from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN
 from .coordinator import TududiCoordinator
+from .invoices import INVOICE_LINKS, InvoiceData, parse_amount
 from .models import Note, Priority, Task, TaskStatus
 from .reminders import REMINDERS
 
@@ -44,6 +45,12 @@ SERVICE_COMPLETE_TASK = "complete_task"
 SERVICE_FIND_TASKS = "find_tasks"
 SERVICE_ADD_NOTE = "add_note"
 SERVICE_RUN_REMINDERS = "run_reminders"
+SERVICE_CREATE_INVOICE = "create_invoice"
+SERVICE_UPDATE_INVOICE = "update_invoice"
+ATTR_AMOUNT = "amount"
+ATTR_CURRENCY = "currency"
+ATTR_REFERENCE = "reference"
+ATTR_LINK_PREVIOUS = "link_previous"
 ATTR_FORCE = "force"
 
 PRIORITIES = {p.name.lower(): p for p in Priority}
@@ -109,6 +116,36 @@ def _enum_name(enum: type[IntEnum], value: int | None) -> str | None:
         return None
 
 
+def _amount(value: Any) -> Any:
+    if value is None or value == "":
+        return None
+    parsed = parse_amount(value)
+    if parsed is None:
+        raise vol.Invalid(f"Invalid amount: {value}")
+    return parsed
+
+
+_INVOICE_FIELDS = {
+    vol.Optional(ATTR_AMOUNT): _amount,
+    vol.Optional(ATTR_CURRENCY): vol.Any(None, cv.string),
+    vol.Optional(ATTR_REFERENCE): vol.Any(None, cv.string),
+}
+CREATE_INVOICE_SCHEMA = vol.Schema(
+    {
+        **_ENTRY,
+        vol.Required(ATTR_NAME): cv.string,
+        vol.Required(ATTR_DUE_DATE): cv.date,
+        vol.Optional(ATTR_PRIORITY): vol.In(PRIORITIES),
+        vol.Optional(ATTR_PROJECT): vol.Any(None, cv.string),
+        vol.Optional(ATTR_TAGS): vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional(ATTR_NOTE): vol.Any(None, cv.string),
+        vol.Optional(ATTR_ASSIGNED_TO): vol.Any(None, cv.string),
+        vol.Optional(ATTR_LINK_PREVIOUS, default=True): cv.boolean,
+        **_INVOICE_FIELDS,
+    }
+)
+UPDATE_INVOICE_SCHEMA = vol.Schema({**_ENTRY, vol.Required(ATTR_UID): cv.string, **_INVOICE_FIELDS})
+
 RUN_REMINDERS_SCHEMA = vol.Schema(
     {
         vol.Optional(ATTR_CONFIG_ENTRY_ID): cv.string,
@@ -133,6 +170,22 @@ def task_response(task: Task) -> dict[str, Any]:
         "assigned_to": task.assigned_to,
         "completed_at": task.completed_at.isoformat() if task.completed_at else None,
     }
+
+
+def _invoice_from(data: dict[str, Any]) -> InvoiceData:
+    return InvoiceData(
+        amount=data.get(ATTR_AMOUNT),
+        currency=(data.get(ATTR_CURRENCY) or "").strip().upper() or None,
+        reference=(data.get(ATTR_REFERENCE) or "").strip() or None,
+    )
+
+
+def _with_invoice(coordinator: TududiCoordinator, task: Task) -> dict[str, Any]:
+    response = task_response(task)
+    if coordinator.is_invoice(task):
+        data = coordinator.data.invoices.get(task.uid)
+        response["invoice"] = data.as_dict() if data else None
+    return response
 
 
 def note_response(note: Note) -> dict[str, Any]:
@@ -235,18 +288,18 @@ def async_setup_services(hass: HomeAssistant) -> None:
         data = dict(call.data)
         name = data.pop(ATTR_NAME)
         task = await coordinator.async_create_task(name, **_task_fields(coordinator, data))
-        return {"task": task_response(task)}
+        return {"task": _with_invoice(coordinator, task)}
 
     async def update_task(call: ServiceCall) -> ServiceResponse:
         coordinator = _coordinator(hass, call)
         fields = _task_fields(coordinator, dict(call.data))
         task = await coordinator.async_update_task(call.data[ATTR_UID], **fields)
-        return {"task": task_response(task)}
+        return {"task": _with_invoice(coordinator, task)}
 
     async def complete_task(call: ServiceCall) -> ServiceResponse:
         coordinator = _coordinator(hass, call)
         task = await coordinator.async_complete_task(call.data[ATTR_UID])
-        return {"task": task_response(task)}
+        return {"task": _with_invoice(coordinator, task)}
 
     async def find_tasks(call: ServiceCall) -> ServiceResponse:
         coordinator = _coordinator(hass, call)
@@ -261,7 +314,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
             if _matches(t, call.data.get(ATTR_TAG), call.data.get(ATTR_TEXT), project_uid)
         ]
         found.sort(key=lambda t: (t.due_date is None, t.due_date, t.name.casefold()))
-        return {"tasks": [task_response(t) for t in found]}
+        return {"tasks": [_with_invoice(coordinator, t) for t in found]}
 
     async def add_note(call: ServiceCall) -> ServiceResponse:
         coordinator = _coordinator(hass, call)
@@ -272,6 +325,28 @@ def async_setup_services(hass: HomeAssistant) -> None:
             fields["tags"] = call.data[ATTR_TAGS]
         note = await coordinator.async_create_note(call.data[ATTR_TITLE], **fields)
         return {"note": note_response(note)}
+
+    async def create_invoice(call: ServiceCall) -> ServiceResponse:
+        coordinator = _coordinator(hass, call)
+        data = dict(call.data)
+        name = data.pop(ATTR_NAME)
+        fields = _task_fields(coordinator, data)
+        task = await coordinator.async_create_invoice(
+            name,
+            _invoice_from(call.data),
+            auto_link=call.data[ATTR_LINK_PREVIOUS],
+            **fields,
+        )
+        links = hass.data[INVOICE_LINKS]
+        return {
+            "task": _with_invoice(coordinator, task),
+            "previous_uid": links.previous.get(task.uid),
+        }
+
+    async def update_invoice(call: ServiceCall) -> ServiceResponse:
+        coordinator = _coordinator(hass, call)
+        data = await coordinator.async_set_invoice(call.data[ATTR_UID], _invoice_from(call.data))
+        return {"invoice": data.as_dict() if data else None}
 
     async def run_reminders(call: ServiceCall) -> ServiceResponse:
         manager = hass.data[REMINDERS]
@@ -294,6 +369,8 @@ def async_setup_services(hass: HomeAssistant) -> None:
         (SERVICE_FIND_TASKS, find_tasks, FIND_TASKS_SCHEMA, SupportsResponse.ONLY),
         (SERVICE_ADD_NOTE, add_note, ADD_NOTE_SCHEMA, SupportsResponse.OPTIONAL),
         (SERVICE_RUN_REMINDERS, run_reminders, RUN_REMINDERS_SCHEMA, SupportsResponse.OPTIONAL),
+        (SERVICE_CREATE_INVOICE, create_invoice, CREATE_INVOICE_SCHEMA, SupportsResponse.OPTIONAL),
+        (SERVICE_UPDATE_INVOICE, update_invoice, UPDATE_INVOICE_SCHEMA, SupportsResponse.OPTIONAL),
     ):
         hass.services.async_register(
             DOMAIN, name, handler, schema=schema, supports_response=response

@@ -1,13 +1,16 @@
 import { LitElement, css, html, nothing, type PropertyValues } from "lit";
 import { TududiApi, errorMessage } from "./api";
-import { icon } from "./icons";
+import { define, icon } from "./icons";
 import {
   BUILTIN_VIEWS,
   daysUntil,
   dueLabel,
   dueTone,
+  formatMoney,
   groupTasks,
   initials,
+  invoiceDraft,
+  invoiceTotal,
   matchesSearch,
   parseView,
   quickAddDefaults,
@@ -15,8 +18,10 @@ import {
   viewCount,
   viewTitle,
   withTask,
+  type InvoiceDraft,
   type ViewId,
 } from "./logic";
+import "./tududi-invoice-form";
 import type { NoteSaveDetail } from "./tududi-notes";
 import "./tududi-notes";
 import "./tududi-task-detail";
@@ -24,6 +29,7 @@ import {
   STATUS,
   type Entry,
   type HomeAssistant,
+  type InvoiceFields,
   type Route,
   type Snapshot,
   type Task,
@@ -48,6 +54,8 @@ class TududiPanel extends LitElement {
     toast: { state: true },
     loading: { state: true },
     refreshing: { state: true },
+    draft: { state: true },
+    savingInvoice: { state: true },
   };
 
   declare hass: HomeAssistant;
@@ -65,6 +73,9 @@ class TududiPanel extends LitElement {
   declare toast: string | undefined;
   declare loading: boolean;
   declare refreshing: boolean;
+  /** Invoice being created (form open) or undefined. */
+  declare draft: InvoiceDraft | undefined;
+  declare savingInvoice: boolean;
 
   private api = new TududiApi(() => this.hass);
   private unsubscribe?: Promise<() => Promise<void>>;
@@ -79,6 +90,7 @@ class TududiPanel extends LitElement {
     this.quickAdd = "";
     this.loading = true;
     this.refreshing = false;
+    this.savingInvoice = false;
   }
 
   // ------------------------------------------------------------------ lifecycle
@@ -280,6 +292,50 @@ class TududiPanel extends LitElement {
     }
   }
 
+  // ------------------------------------------------------------------ invoices
+
+  private openInvoiceForm(previousUid?: string) {
+    const snap = this.snap;
+    if (!snap) return;
+    const previous = previousUid ? snap.tasks.find((t) => t.uid === previousUid) : undefined;
+    this.draft = invoiceDraft(snap, previous);
+    this.selectedUid = undefined;
+  }
+
+  private async createInvoice(fields: InvoiceFields) {
+    if (!this.entryId) return;
+    this.savingInvoice = true;
+    try {
+      const task = await this.api.createInvoice(this.entryId, fields);
+      this.draft = undefined;
+      this.selectedUid = task.uid;
+    } catch (err) {
+      this.showToast(`Adding invoice failed: ${errorMessage(err)}`);
+    } finally {
+      this.savingInvoice = false;
+    }
+  }
+
+  private async updateInvoice(detail: {
+    uid: string;
+    amount: string | null;
+    currency: string | null;
+    reference: string | null;
+  }) {
+    const snap = this.snap;
+    const task = snap?.tasks.find((t) => t.uid === detail.uid);
+    if (!this.entryId || !task?.invoice) return;
+    const { uid, ...data } = detail;
+    this.setOverride(uid, { ...task, invoice: { ...task.invoice, ...data } });
+    try {
+      await this.api.updateInvoice(this.entryId, uid, data);
+    } catch (err) {
+      this.showToast(`Saving invoice failed: ${errorMessage(err)}`);
+    } finally {
+      this.setOverride(uid, undefined);
+    }
+  }
+
   private async refresh() {
     if (!this.entryId) return;
     this.refreshing = true;
@@ -377,6 +433,9 @@ class TududiPanel extends LitElement {
                 @note-save=${(e: CustomEvent<NoteSaveDetail>) =>
                   this.saveNote(e.detail, selected.project_uid)}
                 @note-delete=${(e: CustomEvent<{ uid: string }>) => this.deleteNote(e.detail.uid)}
+                @invoice-change=${(e: CustomEvent) => this.updateInvoice(e.detail)}
+                @select-task=${(e: CustomEvent<{ uid: string }>) => (this.selectedUid = e.detail.uid)}
+                @next-invoice=${(e: CustomEvent<{ uid: string }>) => this.openInvoiceForm(e.detail.uid)}
               ></tududi-task-detail>
             </aside>`
           : nothing}
@@ -451,7 +510,7 @@ class TududiPanel extends LitElement {
     const tasks = tasksForView(snap, view).filter((t) => matchesSearch(t, this.search));
     const groups = groupTasks(snap, view, tasks, this.language);
     const projectUid = view.startsWith("project:") ? view.slice("project:".length) : null;
-    const canAdd = view !== "done" && view !== "overdue";
+    const canAdd = view !== "done" && view !== "overdue" && view !== "invoices";
 
     return html`
       <div class="list-header">
@@ -480,6 +539,20 @@ class TududiPanel extends LitElement {
             />
           </form>`
         : nothing}
+      ${this.draft
+        ? html`<tududi-invoice-form
+            .snap=${snap}
+            .draft=${this.draft}
+            .language=${this.language}
+            ?busy=${this.savingInvoice}
+            @invoice-submit=${(e: CustomEvent<InvoiceFields>) => this.createInvoice(e.detail)}
+            @cancel=${() => (this.draft = undefined)}
+          ></tududi-invoice-form>`
+        : view === "invoices"
+          ? html`<button class="quick-add new-invoice" @click=${() => this.openInvoiceForm()}>
+              ${icon("receipt")} <span>New invoice</span>
+            </button>`
+          : nothing}
       ${projectUid
         ? html`<tududi-notes
             class="project-notes"
@@ -496,7 +569,12 @@ class TududiPanel extends LitElement {
             (g) => html`
               <section>
                 ${g.label
-                  ? html`<h2 class="group ${g.key}">${g.label}<span>${g.tasks.length}</span></h2>`
+                  ? html`<h2 class="group ${g.key}">
+                      ${g.label}<span>${g.tasks.length}</span>
+                      ${view === "invoices" && g.key !== "done"
+                        ? html`<span class="total">${invoiceTotal(g.tasks, snap.currency, this.language)}</span>`
+                        : nothing}
+                    </h2>`
                   : nothing}
                 ${g.tasks.map((t) => this.renderTask(snap, t, view))}
               </section>
@@ -555,6 +633,9 @@ class TududiPanel extends LitElement {
             ${t.recurring ? html`<span class="has-note">${icon("repeat", 14)}</span>` : nothing}
           </div>
         </div>
+        ${t.invoice?.amount
+          ? html`<span class="money">${formatMoney(t.invoice.amount, t.invoice.currency ?? snap.currency, this.language)}</span>`
+          : nothing}
         ${assignee
           ? html`<span class="avatar" title=${`Assigned to ${assignee.name}`}>${initials(assignee.name)}</span>`
           : nothing}
@@ -783,6 +864,35 @@ class TududiPanel extends LitElement {
     .project-notes {
       margin-bottom: 16px;
     }
+    tududi-invoice-form {
+      margin-bottom: 16px;
+    }
+    button.new-invoice {
+      width: 100%;
+      font: inherit;
+      padding: 10px;
+      cursor: pointer;
+      color: var(--primary-color);
+    }
+    button.new-invoice:hover {
+      border-color: var(--primary-color);
+    }
+    h2.group .total {
+      margin-left: auto;
+      font-weight: 500;
+      color: var(--primary-text-color);
+      text-transform: none;
+      letter-spacing: 0;
+      font-variant-numeric: tabular-nums;
+    }
+    .money {
+      flex: none;
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+    }
+    .task.closed .money {
+      color: var(--secondary-text-color);
+    }
     .warning {
       background: var(--warning-color, #ffa600);
       color: #fff;
@@ -926,4 +1036,4 @@ class TududiPanel extends LitElement {
   `;
 }
 
-customElements.define("tududi-panel", TududiPanel);
+define("tududi-panel", TududiPanel);
