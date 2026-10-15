@@ -1,0 +1,13 @@
+{
+  "domain": "tududi",
+  "name": "Tududi",
+  "codeowners": ["@tryffel"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/tryffel/hass-tududi",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/tryffel/hass-tududi/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

@@ -1,0 +1,46 @@
+[
+    {
+        "uid": "t6a09e6xa83m86d",
+        "name": "battery",
+        "tag_type": "user",
+        "pinned": false,
+        "color": null,
+        "usage_count": 1,
+        "tasks_count": 1,
+        "notes_count": 0,
+        "projects_count": 0
+    },
+    {
+        "uid": "dp3xaqm7jy4dksp",
+        "name": "invoice",
+        "tag_type": "user",
+        "pinned": false,
+        "color": null,
+        "usage_count": 6,
+        "tasks_count": 6,
+        "notes_count": 0,
+        "projects_count": 0
+    },
+    {
+        "uid": "u8fimqy9ged0xxe",
+        "name": "someday",
+        "tag_type": "system",
+        "pinned": true,
+        "color": null,
+        "usage_count": 0,
+        "tasks_count": 0,
+        "notes_count": 0,
+        "projects_count": 0
+    },
+    {
+        "uid": "xcu97tw83fevsnb",
+        "name": "today",
+        "tag_type": "system",
+        "pinned": true,
+        "color": null,
+        "usage_count": 0,
+        "tasks_count": 0,
+        "notes_count": 0,
+        "projects_count": 0
+    }
+]

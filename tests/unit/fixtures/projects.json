@@ -1,0 +1,124 @@
+{
+    "projects": [
+        {
+            "id": 2,
+            "uid": "5wp50a8gu85pd1c",
+            "name": "Devices",
+            "description": "",
+            "pin_to_sidebar": false,
+            "priority": null,
+            "due_date_at": null,
+            "user_id": 1,
+            "area_id": null,
+            "image_url": null,
+            "color": null,
+            "task_show_completed": false,
+            "task_sort_order": "created_at:desc",
+            "goal_id": null,
+            "is_maintenance": false,
+            "ai_insights": null,
+            "is_template": false,
+            "template_category": null,
+            "clone_count": 0,
+            "source_template_id": null,
+            "status": "not_started",
+            "created_at": "2026-10-15T16:01:34.875Z",
+            "updated_at": "2026-10-15T16:01:34.875Z",
+            "Tasks": [
+                {
+                    "id": 9,
+                    "status": 0
+                }
+            ],
+            "Area": null,
+            "Goal": null,
+            "Tags": [],
+            "User": {
+                "uid": "urqsq35bpiad2g6"
+            },
+            "tags": [],
+            "task_status": {
+                "total": 1,
+                "done": 0,
+                "in_progress": 0,
+                "not_started": 1
+            },
+            "completion_percentage": 0,
+            "user_uid": "urqsq35bpiad2g6",
+            "share_count": 0,
+            "is_shared": false,
+            "is_stalled": false,
+            "sort_position": null
+        },
+        {
+            "id": 1,
+            "uid": "jeqrjkh14aj9w8q",
+            "name": "Household bills",
+            "description": "",
+            "pin_to_sidebar": false,
+            "priority": null,
+            "due_date_at": null,
+            "user_id": 1,
+            "area_id": null,
+            "image_url": null,
+            "color": null,
+            "task_show_completed": false,
+            "task_sort_order": "created_at:desc",
+            "goal_id": null,
+            "is_maintenance": false,
+            "ai_insights": null,
+            "is_template": false,
+            "template_category": null,
+            "clone_count": 0,
+            "source_template_id": null,
+            "status": "not_started",
+            "created_at": "2026-10-15T16:01:34.829Z",
+            "updated_at": "2026-10-15T16:01:34.829Z",
+            "Tasks": [
+                {
+                    "id": 1,
+                    "status": 0
+                },
+                {
+                    "id": 2,
+                    "status": 0
+                },
+                {
+                    "id": 3,
+                    "status": 0
+                },
+                {
+                    "id": 4,
+                    "status": 0
+                },
+                {
+                    "id": 5,
+                    "status": 0
+                },
+                {
+                    "id": 6,
+                    "status": 2
+                }
+            ],
+            "Area": null,
+            "Goal": null,
+            "Tags": [],
+            "User": {
+                "uid": "urqsq35bpiad2g6"
+            },
+            "tags": [],
+            "task_status": {
+                "total": 6,
+                "done": 1,
+                "in_progress": 0,
+                "not_started": 5
+            },
+            "completion_percentage": 17,
+            "user_uid": "urqsq35bpiad2g6",
+            "share_count": 1,
+            "is_shared": true,
+            "is_stalled": false,
+            "sort_position": null
+        }
+    ]
+}

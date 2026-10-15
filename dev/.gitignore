@@ -1,0 +1,5 @@
+# Home Assistant runtime state
+ha-config/*
+!ha-config/configuration.yaml
+!ha-config/custom_components/
+.secrets.env

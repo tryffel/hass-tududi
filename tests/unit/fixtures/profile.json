@@ -1,0 +1,102 @@
+{
+    "has_password": true,
+    "uid": "urqsq35bpiad2g6",
+    "email": "giorgio@example.com",
+    "name": "Giorgio",
+    "surname": null,
+    "appearance": "light",
+    "language": "en",
+    "timezone": "Europe/Helsinki",
+    "first_day_of_week": 1,
+    "avatar_image": null,
+    "telegram_bot_token": null,
+    "telegram_chat_id": null,
+    "telegram_allowed_users": null,
+    "task_summary_enabled": false,
+    "task_summary_frequency": "daily",
+    "features": {
+        "ai_assistant_enabled": false,
+        "pomodoro_enabled": false,
+        "eisenhower_enabled": false,
+        "kanban_enabled": false,
+        "habits_enabled": true,
+        "calendar_enabled": false
+    },
+    "today_settings": {
+        "showMetrics": false,
+        "showSuggestions": false,
+        "showDueToday": true,
+        "showCompleted": true,
+        "showProgressBar": true,
+        "showDailyQuote": true
+    },
+    "sidebar_settings": {
+        "pinnedViewsOrder": [],
+        "visibleSections": {
+            "upcomingTasks": true,
+            "assignedToMe": true,
+            "everyone": true
+        }
+    },
+    "ui_settings": {
+        "project": {
+            "details": {
+                "showMetrics": true
+            }
+        }
+    },
+    "notification_preferences": {
+        "dueTasks": {
+            "inApp": true,
+            "email": false,
+            "push": false,
+            "telegram": false
+        },
+        "overdueTasks": {
+            "inApp": true,
+            "email": false,
+            "push": false,
+            "telegram": false
+        },
+        "dueProjects": {
+            "inApp": true,
+            "email": false,
+            "push": false,
+            "telegram": false
+        },
+        "overdueProjects": {
+            "inApp": true,
+            "email": false,
+            "push": false,
+            "telegram": false
+        },
+        "deferUntil": {
+            "inApp": true,
+            "email": false,
+            "push": false,
+            "telegram": false
+        },
+        "taskAssigned": {
+            "inApp": true,
+            "email": false,
+            "push": false,
+            "telegram": false
+        },
+        "habitReminders": {
+            "inApp": true,
+            "email": false,
+            "push": false,
+            "telegram": false
+        },
+        "comments": {
+            "inApp": true,
+            "email": false,
+            "push": false,
+            "telegram": false
+        }
+    },
+    "keyboard_shortcuts": null,
+    "ai_profile": null,
+    "onboarded_at": null,
+    "onboarding_starter": null
+}

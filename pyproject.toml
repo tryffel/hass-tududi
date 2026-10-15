@@ -1,0 +1,36 @@
+[project]
+name = "hass-tududi"
+version = "0.1.0"
+description = "Home Assistant integration for tududi"
+requires-python = ">=3.14.2"
+
+[dependency-groups]
+dev = [
+    "pytest-homeassistant-custom-component==0.13.372",
+    "ruff",
+    "mypy",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests/unit"]
+markers = ["integration: requires the dev tududi container (make dev-up)"]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "ASYNC", "SIM", "RUF"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["custom_components"]
+
+[tool.mypy]
+python_version = "3.14"
+ignore_missing_imports = true
+check_untyped_defs = true

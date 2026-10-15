@@ -1,0 +1,44 @@
+[
+    {
+        "id": 2,
+        "uid": "375v9pqmixndntd",
+        "title": "Bills info",
+        "content": "Electricity contract renews in January.",
+        "user_id": 1,
+        "project_id": 1,
+        "color": null,
+        "background": null,
+        "public_inherit_style": true,
+        "pin_to_sidebar": false,
+        "public_shared_at": null,
+        "created_at": "2026-10-15T16:01:35.099Z",
+        "updated_at": "2026-10-15T16:01:35.099Z",
+        "Tags": [],
+        "Project": {
+            "name": "Household bills",
+            "uid": "jeqrjkh14aj9w8q"
+        },
+        "is_public": false
+    },
+    {
+        "id": 1,
+        "uid": "jjafwkdvfi0yg5v",
+        "title": "Hallway motion sensor",
+        "content": "Battery: CR2032\n\n- 2026-03-02 replaced",
+        "user_id": 1,
+        "project_id": 2,
+        "color": null,
+        "background": null,
+        "public_inherit_style": true,
+        "pin_to_sidebar": false,
+        "public_shared_at": null,
+        "created_at": "2026-10-15T16:01:35.090Z",
+        "updated_at": "2026-10-15T16:01:35.090Z",
+        "Tags": [],
+        "Project": {
+            "name": "Devices",
+            "uid": "5wp50a8gu85pd1c"
+        },
+        "is_public": false
+    }
+]

@@ -1,0 +1,9 @@
+{
+  "entity": {
+    "sensor": {
+      "overdue": { "default": "mdi:calendar-alert" },
+      "due_today": { "default": "mdi:calendar-today" },
+      "due_this_week": { "default": "mdi:calendar-week" }
+    }
+  }
+}

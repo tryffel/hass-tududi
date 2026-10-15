@@ -1,0 +1,43 @@
+{
+    "people": [
+        {
+            "id": 1,
+            "uid": "p3abp4qfi3gegzu",
+            "user_id": 1,
+            "linked_user_id": 1,
+            "name": "Giorgio",
+            "relationship_type": "other",
+            "email": "giorgio@example.com",
+            "phone": null,
+            "notes": null,
+            "archived": false,
+            "color": null,
+            "created_at": "2026-10-15T16:01:31.594Z",
+            "updated_at": "2026-10-15T16:01:34.562Z",
+            "is_self": true,
+            "kind": "member",
+            "can_edit": true,
+            "account_status": "active",
+            "can_sign_in_link": false,
+            "can_manage": false
+        },
+        {
+            "id": 2,
+            "uid": "mg57u3pu2i40r15",
+            "user_id": 2,
+            "linked_user_id": 2,
+            "name": "Giulia",
+            "relationship_type": "other",
+            "archived": false,
+            "color": null,
+            "created_at": "2026-10-15T16:01:34.206Z",
+            "updated_at": "2026-10-15T16:01:34.206Z",
+            "is_self": false,
+            "kind": "member",
+            "can_edit": false,
+            "account_status": "active",
+            "can_sign_in_link": false,
+            "can_manage": true
+        }
+    ]
+}

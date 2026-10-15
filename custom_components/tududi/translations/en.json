@@ -1,0 +1,86 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to tududi",
+        "description": "Create a personal API key in tududi under Profile → API keys. Add one entry per tududi user.",
+        "data": {
+          "url": "tududi URL",
+          "api_key": "API key",
+          "verify_ssl": "Verify SSL certificate"
+        },
+        "data_description": {
+          "url": "Address of your tududi server, including http:// or https:// and the port if needed. The /api/v1 path must be reachable without a login proxy.",
+          "api_key": "Personal API key starting with tt_"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate tududi",
+        "description": "The API key for {name} ({url}) no longer works. Enter a new key.",
+        "data": {
+          "api_key": "API key"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure tududi",
+        "data": {
+          "url": "tududi URL",
+          "api_key": "API key",
+          "verify_ssl": "Verify SSL certificate"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot reach the tududi API. Check the URL and that no login proxy blocks /api/v1.",
+      "invalid_auth": "The API key is invalid, expired or revoked.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This tududi user is already configured.",
+      "reauth_successful": "Re-authentication was successful.",
+      "reconfigure_successful": "Reconfiguration was successful.",
+      "wrong_account": "The API key belongs to a different tududi user."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Tududi options",
+        "data": {
+          "ha_user": "Home Assistant user",
+          "update_interval": "Update interval",
+          "default_notify": "Default notify service",
+          "reminders_enabled": "Enable due date reminders",
+          "reminder_tag": "Reminder tag",
+          "reminder_days_before": "Remind days before due date",
+          "reminder_time": "Reminder time",
+          "reminder_include_overdue": "Remind about overdue tasks"
+        },
+        "data_description": {
+          "ha_user": "The Home Assistant user this tududi account belongs to. The Tududi panel opens this account by default for that user.",
+          "update_interval": "How often tududi is polled for changes.",
+          "default_notify": "Used for reminders of tasks that are not assigned to a person, e.g. notify.mobile_app_phone.",
+          "reminder_tag": "Tasks with this tag get daily reminders before their due date.",
+          "reminder_days_before": "Start reminding this many days before the due date."
+        }
+      },
+      "notify": {
+        "title": "Notify targets per person",
+        "description": "Reminders for tasks assigned to a person are sent to their notify service. Leave empty to use the default notify service."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "overdue": {
+        "name": "Overdue"
+      },
+      "due_today": {
+        "name": "Due today"
+      },
+      "due_this_week": {
+        "name": "Due this week"
+      }
+    }
+  }
+}

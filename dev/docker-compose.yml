@@ -1,0 +1,28 @@
+name: hass-tududi-dev
+
+services:
+  tududi:
+    image: chrisvel/tududi:1.9.1
+    environment:
+      TUDUDI_USER_EMAIL: giorgio@example.com
+      TUDUDI_USER_PASSWORD: devpassword123
+      TUDUDI_SESSION_SECRET: dev-session-secret-not-for-production
+      TUDUDI_ALLOWED_ORIGINS: http://localhost:3002,http://127.0.0.1:3002
+      BASE_URL: http://localhost:3002
+    ports:
+      - "3002:3002"
+    volumes:
+      - tududi_db:/app/db
+
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:2026.10.1
+    environment:
+      TZ: Europe/Helsinki
+    ports:
+      - "8123:8123"
+    volumes:
+      - ./ha-config:/config
+      - ../custom_components/tududi:/config/custom_components/tududi:ro
+
+volumes:
+  tududi_db:
