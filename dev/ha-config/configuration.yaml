@@ -4,3 +4,9 @@ logger:
   default: warning
   logs:
     custom_components.tududi: debug
+
+# Recording notify targets for dev/E2E (see custom_components/dev_notify).
+dev_notify:
+  targets:
+    - test_giorgio
+    - test_giulia

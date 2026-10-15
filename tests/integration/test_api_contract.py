@@ -36,12 +36,12 @@ async def test_invalid_key(session) -> None:
 
 async def test_seeded_data_shape(giorgio: TududiClient) -> None:
     tasks = await giorgio.get_tasks()
-    invoices = [t for t in tasks if "invoice" in t.tags]
-    assert len(invoices) >= 5
     assert all(t.is_open for t in tasks)
-    assert all(t.project_name == "Household bills" for t in invoices)
 
     all_tasks = await giorgio.get_tasks(include_done=True)
+    invoices = [t for t in all_tasks if "invoice" in t.tags]
+    assert len(invoices) >= 6
+    assert all(t.project_name == "Household bills" for t in invoices)
     assert any(t.is_done for t in all_tasks)
 
     projects = {p.name for p in await giorgio.get_projects()}

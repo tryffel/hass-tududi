@@ -93,6 +93,14 @@ def mock_client(profile_json, tasks) -> Generator[MagicMock]:
         client.update_task.side_effect = _updated
         client.complete_task.side_effect = lambda uid: _updated(uid, status=TaskStatus.DONE)
         client.delete_task.return_value = None
+        client.create_note.side_effect = lambda title, **fields: Note(
+            id=99,
+            uid="new-note-uid",
+            title=title,
+            content=fields.get("content", ""),
+            project_uid=fields.get("project_uid"),
+            tags=fields.get("tags", []),
+        )
         yield client
 
 

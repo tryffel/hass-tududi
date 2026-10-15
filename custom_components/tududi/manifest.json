@@ -3,7 +3,7 @@
   "name": "Tududi",
   "codeowners": ["@tryffel"],
   "config_flow": true,
-  "dependencies": [],
+  "dependencies": ["http", "panel_custom", "websocket_api"],
   "documentation": "https://github.com/tryffel/hass-tududi",
   "integration_type": "service",
   "iot_class": "cloud_polling",

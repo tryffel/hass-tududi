@@ -414,6 +414,7 @@ async def setup_ha_entries(
             json={
                 "ha_user": ha_users[name],
                 "update_interval": 60,
+                "default_notify": f"notify.test_{user}",
                 "reminders_enabled": True,
                 "reminder_tag": "invoice",
                 "reminder_days_before": 7,
@@ -424,8 +425,14 @@ async def setup_ha_entries(
         ) as r:
             step = await r.json()
         if step.get("step_id") == "notify":
+            # Map the other household member's tududi person to their test target.
+            mapping = {
+                other["name"]: f"notify.test_{other_user}"
+                for other_user, other in USERS.items()
+                if other_user != user
+            }
             async with s.post(
-                f"{flows}/options/flow/{options['flow_id']}", json={}, headers=auth
+                f"{flows}/options/flow/{options['flow_id']}", json=mapping, headers=auth
             ) as r:
                 step = await r.json()
         if step.get("type") != "create_entry":

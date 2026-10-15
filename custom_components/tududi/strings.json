@@ -82,5 +82,207 @@
         "name": "Due this week"
       }
     }
+  },
+  "services": {
+    "create_task": {
+      "name": "Create task",
+      "description": "Creates a task in tududi.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Tududi account",
+          "description": "The tududi account (config entry) to use."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Task name."
+        },
+        "due_date": {
+          "name": "Due date",
+          "description": "Due date. Use null to clear it when updating."
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "Task priority."
+        },
+        "status": {
+          "name": "Status",
+          "description": "Task status."
+        },
+        "project": {
+          "name": "Project",
+          "description": "Project name or uid. Empty clears the project when updating."
+        },
+        "tags": {
+          "name": "Tags",
+          "description": "Tags. When updating, replaces all existing tags."
+        },
+        "note": {
+          "name": "Note",
+          "description": "Free text note of the task, e.g. invoice amount and reference."
+        },
+        "assigned_to": {
+          "name": "Assigned to",
+          "description": "Name or uid of a tududi person. Empty clears the assignment when updating."
+        }
+      }
+    },
+    "update_task": {
+      "name": "Update task",
+      "description": "Updates fields of a tududi task. Only the given fields are changed.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Tududi account",
+          "description": "The tududi account (config entry) to use."
+        },
+        "uid": {
+          "name": "Task UID",
+          "description": "The tududi task uid, e.g. from a find_tasks response or a to-do item."
+        },
+        "name": {
+          "name": "Name",
+          "description": "New task name."
+        },
+        "due_date": {
+          "name": "Due date",
+          "description": "Due date. Use null to clear it when updating."
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "Task priority."
+        },
+        "status": {
+          "name": "Status",
+          "description": "Task status."
+        },
+        "project": {
+          "name": "Project",
+          "description": "Project name or uid. Empty clears the project when updating."
+        },
+        "tags": {
+          "name": "Tags",
+          "description": "Tags. When updating, replaces all existing tags."
+        },
+        "note": {
+          "name": "Note",
+          "description": "Free text note of the task, e.g. invoice amount and reference."
+        },
+        "assigned_to": {
+          "name": "Assigned to",
+          "description": "Name or uid of a tududi person. Empty clears the assignment when updating."
+        }
+      }
+    },
+    "complete_task": {
+      "name": "Complete task",
+      "description": "Marks a tududi task as done.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Tududi account",
+          "description": "The tududi account (config entry) to use."
+        },
+        "uid": {
+          "name": "Task UID",
+          "description": "The tududi task uid, e.g. from a find_tasks response or a to-do item."
+        }
+      }
+    },
+    "find_tasks": {
+      "name": "Find tasks",
+      "description": "Finds tasks by tag, text and project. Returns the matching tasks.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Tududi account",
+          "description": "The tududi account (config entry) to use."
+        },
+        "tag": {
+          "name": "Tag",
+          "description": "Only tasks with this tag."
+        },
+        "text": {
+          "name": "Text",
+          "description": "Only tasks whose name or note contains this text (case-insensitive)."
+        },
+        "project": {
+          "name": "Project",
+          "description": "Only tasks in this project (name or uid)."
+        },
+        "include_done": {
+          "name": "Include done",
+          "description": "Also search completed tasks (queries tududi directly)."
+        }
+      }
+    },
+    "add_note": {
+      "name": "Add note",
+      "description": "Creates a tududi note, optionally in a project.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Tududi account",
+          "description": "The tududi account (config entry) to use."
+        },
+        "title": {
+          "name": "Title",
+          "description": "Note title."
+        },
+        "content": {
+          "name": "Content",
+          "description": "Note content (Markdown)."
+        },
+        "project": {
+          "name": "Project",
+          "description": "Project name or uid."
+        },
+        "tags": {
+          "name": "Tags",
+          "description": "Note tags."
+        }
+      }
+    },
+    "run_reminders": {
+      "name": "Run reminders",
+      "description": "Sends today's due date reminders now instead of waiting for the reminder time.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Tududi account",
+          "description": "Only run for this account. All accounts when empty."
+        },
+        "force": {
+          "name": "Force",
+          "description": "Send even if a reminder was already sent today or reminders are disabled. Snoozed tasks are still skipped."
+        }
+      }
+    }
+  },
+  "selector": {
+    "priority": {
+      "options": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      }
+    },
+    "status": {
+      "options": {
+        "not_started": "Not started",
+        "in_progress": "In progress",
+        "waiting": "Waiting",
+        "planned": "Planned",
+        "done": "Done"
+      }
+    }
+  },
+  "exceptions": {
+    "entry_not_found": {
+      "message": "Tududi account {entry_id} was not found."
+    },
+    "entry_not_loaded": {
+      "message": "Tududi account {name} is not loaded."
+    },
+    "project_not_found": {
+      "message": "Project \"{project}\" was not found in tududi."
+    },
+    "person_not_found": {
+      "message": "Person \"{person}\" was not found in tududi."
+    }
   }
 }

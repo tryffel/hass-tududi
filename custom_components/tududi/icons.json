@@ -1,9 +1,35 @@
 {
   "entity": {
     "sensor": {
-      "overdue": { "default": "mdi:calendar-alert" },
-      "due_today": { "default": "mdi:calendar-today" },
-      "due_this_week": { "default": "mdi:calendar-week" }
+      "overdue": {
+        "default": "mdi:calendar-alert"
+      },
+      "due_today": {
+        "default": "mdi:calendar-today"
+      },
+      "due_this_week": {
+        "default": "mdi:calendar-week"
+      }
+    }
+  },
+  "services": {
+    "create_task": {
+      "service": "mdi:checkbox-marked-circle-plus-outline"
+    },
+    "update_task": {
+      "service": "mdi:pencil"
+    },
+    "complete_task": {
+      "service": "mdi:check-circle"
+    },
+    "find_tasks": {
+      "service": "mdi:magnify"
+    },
+    "add_note": {
+      "service": "mdi:note-plus"
+    },
+    "run_reminders": {
+      "service": "mdi:bell-ring"
     }
   }
 }

@@ -1,0 +1,158 @@
+create_task:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: tududi
+    name:
+      required: true
+      example: "Electricity invoice"
+      selector:
+        text:
+    due_date:
+      example: "2026-11-01"
+      selector:
+        date:
+    priority:
+      selector:
+        select:
+          translation_key: priority
+          options: [low, medium, high]
+    status:
+      selector:
+        select:
+          translation_key: status
+          options: [not_started, in_progress, waiting, planned, done]
+    project:
+      example: "Household bills"
+      selector:
+        text:
+    tags:
+      example: "invoice"
+      selector:
+        text:
+          multiple: true
+    note:
+      example: "Amount 52.10 EUR, ref 1234 5678"
+      selector:
+        text:
+          multiline: true
+    assigned_to:
+      example: "Giulia"
+      selector:
+        text:
+
+update_task:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: tududi
+    uid:
+      required: true
+      selector:
+        text:
+    name:
+      selector:
+        text:
+    due_date:
+      selector:
+        date:
+    priority:
+      selector:
+        select:
+          translation_key: priority
+          options: [low, medium, high]
+    status:
+      selector:
+        select:
+          translation_key: status
+          options: [not_started, in_progress, waiting, planned, done]
+    project:
+      selector:
+        text:
+    tags:
+      selector:
+        text:
+          multiple: true
+    note:
+      selector:
+        text:
+          multiline: true
+    assigned_to:
+      selector:
+        text:
+
+complete_task:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: tududi
+    uid:
+      required: true
+      selector:
+        text:
+
+find_tasks:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: tududi
+    tag:
+      example: "invoice"
+      selector:
+        text:
+    text:
+      example: "ha:battery:sensor.hallway_motion_battery"
+      selector:
+        text:
+    project:
+      selector:
+        text:
+    include_done:
+      default: false
+      selector:
+        boolean:
+
+add_note:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: tududi
+    title:
+      required: true
+      example: "Hallway motion sensor"
+      selector:
+        text:
+    content:
+      example: "2026-10-15 replaced battery (CR2032)"
+      selector:
+        text:
+          multiline: true
+    project:
+      example: "Devices"
+      selector:
+        text:
+    tags:
+      selector:
+        text:
+          multiple: true
+
+run_reminders:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: tududi
+    force:
+      default: false
+      selector:
+        boolean:

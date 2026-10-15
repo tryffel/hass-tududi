@@ -12,3 +12,4 @@ test-results/
 
 dev/ha-config/home-assistant.log*
 dev/ha-config/home-assistant_v2.*
+e2e/screenshots/

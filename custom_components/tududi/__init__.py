@@ -9,16 +9,34 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_API_KEY, CONF_URL, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.typing import ConfigType
 
 from .api import TududiAuthError, TududiClient, TududiError
-from .const import CONF_VERIFY_SSL
+from .const import CONF_VERIFY_SSL, DOMAIN
 from .coordinator import TududiCoordinator
 from .models import Profile
+from .panel import async_register_panel
+from .reminders import REMINDERS, EntryReminders, ReminderManager
+from .services import async_setup_services
+from .websocket import async_setup_websocket
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.CALENDAR, Platform.SENSOR, Platform.TODO]
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up integration-wide services and reminder state."""
+    manager = ReminderManager(hass)
+    await manager.async_load()
+    hass.data[REMINDERS] = manager
+    async_setup_services(hass)
+    async_setup_websocket(hass)
+    await async_register_panel(hass)
+    return True
 
 
 @dataclass
@@ -61,6 +79,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: TududiConfigEntry) -> bo
     _LOGGER.debug("Connected to tududi at %s as %s", client.base_url, profile.email)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    entry.async_on_unload(EntryReminders(hass, entry, hass.data[REMINDERS]).async_start())
     return True
 
 

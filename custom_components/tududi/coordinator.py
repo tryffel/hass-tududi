@@ -42,6 +42,17 @@ class TududiData:
         """Return tasks that still need action."""
         return [t for t in self.tasks.values() if t.is_open]
 
+    @property
+    def self_person(self) -> Person | None:
+        """Return the person record of the account owner."""
+        return next((p for p in self.people.values() if p.is_self), None)
+
+    @property
+    def self_user_id(self) -> int | None:
+        """Return the tududi user id of the account owner."""
+        person = self.self_person
+        return person.linked_user_id if person else None
+
     def overdue(self, today: date) -> list[Task]:
         """Open tasks with a due date before today."""
         return _by_due([t for t in self.open_tasks if t.due_date and t.due_date < today])
@@ -163,3 +174,44 @@ class TududiCoordinator(DataUpdateCoordinator[TududiData]):
         for uid in uids:
             await self._call(self.client.delete_task(uid))
             self._remove_task(uid)
+
+    async def async_create_note(self, title: str, **fields: Any) -> Note:
+        """Create a note and add it to the cache."""
+        note = await self._call(self.client.create_note(title, **fields))
+        notes = dict(self.data.notes)
+        notes[note.uid] = note
+        self.async_set_updated_data(replace(self.data, notes=notes))
+        return note
+
+    async def async_update_note(self, uid: str, **fields: Any) -> Note:
+        """Update a note in tududi and the cache."""
+        note = await self._call(self.client.update_note(uid, **fields))
+        notes = dict(self.data.notes)
+        notes[note.uid] = note
+        self.async_set_updated_data(replace(self.data, notes=notes))
+        return note
+
+    async def async_delete_note(self, uid: str) -> None:
+        """Delete a note."""
+        await self._call(self.client.delete_note(uid))
+        notes = dict(self.data.notes)
+        notes.pop(uid, None)
+        self.async_set_updated_data(replace(self.data, notes=notes))
+
+    async def async_fetch_all_tasks(self) -> list[Task]:
+        """Fetch all tasks including every completed one (not cached)."""
+        return await self._call(self.client.get_tasks(include_done=True))
+
+    def find_project(self, value: str) -> Project | None:
+        """Find a project by uid or (case-insensitive) name."""
+        if value in self.data.projects:
+            return self.data.projects[value]
+        wanted = value.strip().casefold()
+        return next((p for p in self.data.projects.values() if p.name.casefold() == wanted), None)
+
+    def find_person(self, value: str) -> Person | None:
+        """Find a person by uid or (case-insensitive) name."""
+        if value in self.data.people:
+            return self.data.people[value]
+        wanted = value.strip().casefold()
+        return next((p for p in self.data.people.values() if p.name.casefold() == wanted), None)

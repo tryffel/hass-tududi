@@ -2,7 +2,7 @@ COMPOSE := docker compose -f dev/docker-compose.yml
 UV_RUN := uv run --with aiohttp
 
 .PHONY: dev-up dev-down dev-reset dev-logs dev-bootstrap dev-restart-ha \
-	test test-integration lint format
+	test test-integration test-frontend test-e2e lint format build-frontend
 
 dev-up:
 	$(COMPOSE) up -d
@@ -42,3 +42,19 @@ lint:
 format:
 	uv run ruff check --fix .
 	uv run ruff format .
+
+# Builds custom_components/tududi/frontend/tududi-panel.js (committed for HACS).
+build-frontend:
+	cd frontend && npm ci && npm run build
+
+test-frontend:
+	cd frontend && npm test
+
+# Requires the dev stack (make dev-up) and a built panel.
+test-e2e:
+	cd e2e && npm ci && npx playwright install chromium && npx playwright test
+
+test-e2e-ui:
+	cd e2e && npm ci && npx playwright install chromium && npx playwright test --ui
+
+

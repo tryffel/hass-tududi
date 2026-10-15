@@ -133,7 +133,7 @@ class TududiClient:
         if resp.status == 401 or (resp.status == 403 and path == "/profile"):
             raise TududiAuthError("Invalid or expired API key")
         if 300 <= resp.status < 400:
-            # Typically an auth proxy (e.g. Authelia) redirecting to its login page.
+            # Typically an authentication proxy redirecting to its login page.
             raise TududiConnectionError(
                 f"{method} {path} was redirected to {resp.headers.get('Location')}; "
                 "is an authentication proxy in front of the tududi API?"

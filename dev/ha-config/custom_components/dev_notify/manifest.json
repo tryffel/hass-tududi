@@ -1,0 +1,9 @@
+{
+  "domain": "dev_notify",
+  "name": "Dev notify (test only)",
+  "codeowners": [],
+  "documentation": "https://github.com/tryffel/hass-tududi",
+  "iot_class": "local_push",
+  "requirements": [],
+  "version": "0.0.1"
+}
